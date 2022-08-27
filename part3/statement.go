@@ -7,6 +7,7 @@ import (
 
 type StatementType int
 type PrepareResult int
+type ExecuteResult int
 
 const (
 	PREPARE_SUCCESS PrepareResult = iota
@@ -18,8 +19,20 @@ const (
 	STATEMENT_SELECT
 )
 
+const (
+	ExecuteSuccess ExecuteResult = iota
+	ExecuteTableFull
+)
+
+type Row struct {
+	id       int
+	userName [32]byte
+	email    [255]byte
+}
+
 type Statement struct {
-	Statetype StatementType
+	Statetype   StatementType
+	RowToInsert *Row
 }
 
 func NewStatement() *Statement {
@@ -29,7 +42,16 @@ func NewStatement() *Statement {
 func (s *Statement) PrepareStatement(B *InputBuffer) PrepareResult {
 	if strings.Index(B.buffer, "insert") == 0 {
 		s.Statetype = STATEMENT_INSERT
+		argsAssigned, err := fmt.Scanf("insert %d %s %s",
+			s.RowToInsert.id, s.RowToInsert.userName, s.RowToInsert.email)
+		if err != nil {
+			fmt.Println(err)
+		}
+		if argsAssigned < 3 {
+			return PREPARE_UNRECOGNIZED_STATEMENT
+		}
 		return PREPARE_SUCCESS
+
 	}
 	if strings.Index(B.buffer, "select") == 0 {
 		s.Statetype = STATEMENT_INSERT
@@ -44,5 +66,20 @@ func (s *Statement) ExecuteStatement() {
 		fmt.Println("This is where we would do an insert")
 	case STATEMENT_SELECT:
 		fmt.Println("This is where we would do an select")
+	}
+}
+
+func (s *Statement) ExecuteInsert(t *Table) ExecuteResult {
+	if t.numRows >= TableMaxRows {
+		return ExecuteTableFull
+	}
+	t.Serialize(s.RowToInsert)
+	t.numRows += 1
+	return ExecuteSuccess
+}
+
+func (s *Statement) ExecuteSelect(t *Table) ExecuteResult {
+	for i:= 0;i<t.numRows;i++{
+		
 	}
 }
