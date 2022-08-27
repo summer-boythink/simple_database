@@ -81,6 +81,7 @@ func main() {
 	dbFilename := GetDbFilename()
 	OpenConnection(dbFilename)
 	inputBuffer := NewInputBuffer()
+	table := NewTable()
 	for {
 		prompt()
 		inputBuffer.readInput()
@@ -98,14 +99,22 @@ func main() {
 		statement := NewStatement()
 		switch statement.PrepareStatement(inputBuffer) {
 		case PREPARE_SUCCESS:
-
+		case PREPARE_SYNTAX_ERROR:
+			fmt.Println("Syntax error")
+			continue
 		case PREPARE_UNRECOGNIZED_STATEMENT:
 			fmt.Printf("no support keyword at start of %s\n", inputBuffer.buffer)
 			continue
 		}
 
 		// exec cmd
-		statement.ExecuteStatement()
-		fmt.Println("exec ok!")
+		switch statement.ExecuteStatement(table) {
+		case ExecuteSuccess:
+			fmt.Println("exec success")
+		case ExecuteTableFull:
+			fmt.Println("exec table full")
+		case ExecuteError:
+			fmt.Println("exec error")
+		}
 	}
 }

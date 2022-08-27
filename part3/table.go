@@ -19,22 +19,19 @@ const (
 )
 
 type Table struct {
-	pages   *[TableMaxPage][]byte
 	numRows int
+	pages   *[TableMaxPage][]byte
 }
 
-func (t *Table) RowSlot(RowNum int) (pageNum int, byteOffset int) {
+func (t *Table) RowSlot(RowNum int) (pageNum int, rowOffset int) {
 	pageNum = RowNum / RowsPerPage
 	page := t.pages[pageNum]
 	if page == nil {
-		t.pages[pageNum] = make([]byte, PageSize)
+		t.pages[pageNum] = make([]byte, 0)
 	}
-	rowOffset := RowNum % RowsPerPage
-	byteOffset = rowOffset * RowSize
-	// TODO:need byteOffset ?
+	rowOffset = RowNum % RowsPerPage
 	return
 }
-
 
 func (t *Table) Serialize(r *Row) {
 	pageNum, _ := t.RowSlot(t.numRows)
@@ -43,8 +40,11 @@ func (t *Table) Serialize(r *Row) {
 	t.pages[pageNum] = append(t.pages[pageNum], r.email[:]...)
 }
 
-func (t *Table) deserializeRow(i int) *Row{
-	// t.pages
+func (t *Table) deserializeRow(i int) *Row {
+	row := &Row{}
+	pageNum, rowOffset := t.RowSlot(i)
+	row.GetRows(t, pageNum, rowOffset)
+	return row
 }
 
 func NewTable() *Table {
